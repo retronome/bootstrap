@@ -204,47 +204,17 @@ if command -v brew &> /dev/null; then
     brew_install git-lfs                # Git Large File Storage
     brew_install git-filter-repo        # Rewrite git history
 
-    # Special handling for git-credential-manager due to sudo requirement
-    CURRENT_SECTION="Installing git-credential-manager"
+    # Flag to track if git-credential-manager needs manual installation
+    GCM_NEEDS_INSTALL=false
+
+    # Skip the interactive git-credential-manager installation during main flow
+    CURRENT_SECTION="Checking git credential manager"
     section_start "$CURRENT_SECTION"
-    echo -ne "\r\033[K"  # Clear the line
-    echo -e "\033[1;38;5;226m⚠️  git-credential-manager requires sudo access to complete setup\033[0m"
-    echo -ne "Would you like to install git-credential-manager? This will prompt for your password [y/N]: "
-    read -r gcm_response
-
-    if [[ "$gcm_response" =~ ^[Yy]$ ]]; then
-        echo -e "\033[1;38;5;75m→ Installing git-credential-manager...\033[0m"
-
-        # Run brew install in background
-        brew install git-credential-manager > /dev/null 2>&1 &
-        install_pid=$!
-
-        # Show animated progress while installing
-        while kill -0 $install_pid 2>/dev/null; do
-            echo -ne "\033[1;38;5;75m.\033[0m"
-            sleep 1
-        done
-
-        # Check if installation was successful
-        wait $install_pid
-        if [ $? -eq 0 ]; then
-            echo -e " \033[1;38;5;118mDone ✓\033[0m"
-
-            # Now handle the sudo part
-            echo -e "\033[1;38;5;75m→ Configuring git-credential-manager (requires sudo)...\033[0m"
-            sudo git-credential-manager configure 2>/dev/null
-
-            if [ $? -eq 0 ]; then
-                echo -e "\033[1;38;5;118mConfiguration successful ✓\033[0m"
-            else
-                echo -e "\033[1;38;5;196mConfiguration failed ✗\033[0m"
-                echo -e "\033[1;38;5;226mYou may need to run 'sudo git-credential-manager configure' manually\033[0m"
-            fi
-        else
-            echo -e " \033[1;38;5;196mFailed ✗\033[0m"
-        fi
+    if command -v git-credential-manager &>/dev/null; then
+        echo -e " \033[1;38;5;118mAlready installed ✓\033[0m"
     else
-        echo -e "\r\033[1;38;5;75m→ Installing git-credential-manager...\033[1;38;5;226m Skipped ⦿\033[0m"
+        echo -e " \033[1;38;5;226mSkipped ⦿\033[0m (will prompt for manual installation at end)"
+        GCM_NEEDS_INSTALL=true
     fi
 
     # Core utilities and command line tools
@@ -664,6 +634,15 @@ else
         echo -e " \033[1;38;5;196mFailed ✗\033[0m"
         echo -e "\033[1;38;5;226mCLI tool not found. Zed might not have been installed correctly.\033[0m"
     fi
+fi
+
+# Print important follow-up instructions if needed
+if [ "$GCM_NEEDS_INSTALL" = true ]; then
+    echo -e "\n\033[1;38;5;51m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[1;38;5;226m⚠️  Follow-up Action Required:\033[0m"
+    echo -e "\033[1;38;5;75m→ Install Git Credential Manager (requires sudo):\033[0m"
+    echo -e "   \033[1;38;5;255mbrew install git-credential-manager && sudo git-credential-manager configure\033[0m"
+    echo -e "\033[1;38;5;51m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
 fi
 
 # Print completion message with the same border color
