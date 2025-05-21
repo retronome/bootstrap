@@ -549,6 +549,9 @@ else
         # Install Python 3.10 first
         "$HOME/miniconda3/bin/conda" install -y python=3.10
 
+        # Install NumPy 1.x (compatible with PyTorch)
+        "$HOME/miniconda3/bin/conda" install -y numpy=1.24
+
         # Install PyTorch with MPS support for Apple Silicon
         "$HOME/miniconda3/bin/conda" install -y pytorch torchvision torchaudio -c pytorch
 
