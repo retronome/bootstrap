@@ -575,21 +575,23 @@ else
 fi
 
 # Add conda initialization and convenience alias to .zshrc
-CURRENT_SECTION="Adding conda shortcuts to .zshrc"
+CURRENT_SECTION="Adding conda initialization and shortcuts to .zshrc"
 section_start "$CURRENT_SECTION"
 
-if grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+if grep -q "miniconda3/bin" "$HOME/.zshrc" && grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
     section_skip
 else
-    # Add the alias to activate the PyTorch environment
+    # Add conda initialization and the alias to activate the PyTorch environment
     (
         echo '' >> "$HOME/.zshrc"
-        echo '# Conda environment shortcuts' >> "$HOME/.zshrc"
+        echo '# Conda initialization and shortcuts' >> "$HOME/.zshrc"
+        echo 'export PATH="$HOME/miniconda3/bin:$PATH"' >> "$HOME/.zshrc"
+        echo 'source $HOME/miniconda3/etc/profile.d/conda.sh' >> "$HOME/.zshrc"
         echo 'alias activate-pytorch="conda activate pytorch"' >> "$HOME/.zshrc"
     ) > /dev/null 2>&1
 
     # Check if successful
-    if grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+    if grep -q "miniconda3/bin" "$HOME/.zshrc" && grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
         section_done
     else
         echo -e " \033[1;38;5;196mFailed ✗\033[0m"
