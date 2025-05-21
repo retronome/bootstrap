@@ -636,6 +636,110 @@ else
     fi
 fi
 
+# Install JetBrains Mono font
+CURRENT_SECTION="Installing JetBrains Mono font"
+section_start "$CURRENT_SECTION"
+
+# Check if font is already installed
+if [ -f "$HOME/Library/Fonts/JetBrainsMono-Regular.ttf" ]; then
+    echo -e " \033[1;38;5;226mAlready installed ⦿\033[0m"
+else
+    # Download and install JetBrains Mono
+    (
+        # Create a temporary directory
+        tmp_dir=$(mktemp -d)
+        cd "$tmp_dir"
+
+        # Download the font zip file
+        curl -L -s -o jetbrains-mono.zip "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip"
+
+        # Extract the font files
+        unzip -q jetbrains-mono.zip
+
+        # Create the user fonts directory if it doesn't exist
+        mkdir -p "$HOME/Library/Fonts"
+
+        # Copy the font files to the user fonts directory
+        cp -f fonts/ttf/*.ttf "$HOME/Library/Fonts/"
+
+        # Clean up
+        cd - > /dev/null
+        rm -rf "$tmp_dir"
+    ) > /dev/null 2>&1 &
+
+    install_pid=$!
+
+    # Show animated progress while installing
+    while kill -0 $install_pid 2>/dev/null; do
+        echo -ne "\033[1;38;5;75m.\033[0m"
+        sleep 1
+    done
+
+    # Check if installation was successful
+    wait $install_pid
+    if [ $? -eq 0 ] && [ -f "$HOME/Library/Fonts/JetBrainsMono-Regular.ttf" ]; then
+        echo -e " \033[1;38;5;118mDone ✓\033[0m"
+        echo -e "\033[1;38;5;75m→ JetBrains Mono font has been installed and is ready to use in your applications\033[0m"
+    else
+        echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+    fi
+fi
+
+# Import custom Terminal.app profile
+CURRENT_SECTION="Installing custom Terminal.app profile"
+section_start "$CURRENT_SECTION"
+
+# Download and import Terminal profile
+(
+    # Download the profile
+    curl -fsSL -o "/tmp/Retronome.terminal" "https://raw.githubusercontent.com/retronome/bootstrap/main/Retronome.terminal"
+
+    # Import the profile (this will open Terminal.app)
+    open "/tmp/Retronome.terminal"
+
+    # Wait a moment for Terminal to process
+    sleep 2
+
+    # Set as default profile
+    defaults write com.apple.Terminal "Default Window Settings" -string "Retronome"
+    defaults write com.apple.Terminal "Startup Window Settings" -string "Retronome"
+
+    # Clean up
+    rm -f "/tmp/Retronome.terminal"
+) > /dev/null 2>&1 &
+
+install_pid=$!
+
+# Show animated progress while installing
+while kill -0 $install_pid 2>/dev/null; do
+    echo -ne "\033[1;38;5;75m.\033[0m"
+    sleep 1
+done
+
+# Check if installation was successful
+wait $install_pid
+if [ $? -eq 0 ]; then
+    echo -e " \033[1;38;5;118mDone ✓\033[0m"
+    TERMINAL_CONFIGURED=true
+else
+    echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+fi
+
+# Keep track that we need to tell user to restart Terminal at the end
+NEEDS_TERMINAL_RESTART=true
+
+# Add Terminal restart instructions if needed
+if [ "${NEEDS_TERMINAL_RESTART:-false}" = true ]; then
+    echo -e "\n\033[1;38;5;51m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+    echo -e "\033[1;38;5;226m⚠️  Action Required:\033[0m"
+    echo -e "\033[1;38;5;75m→ Please restart Terminal.app to apply all changes:\033[0m"
+    echo -e "   \033[1;38;5;255m- New JetBrains Mono font\033[0m"
+    echo -e "   \033[1;38;5;255m- Custom Terminal theme\033[0m"
+    echo -e "   \033[1;38;5;255m- Updated PATH and environment variables\033[0m"
+    echo -e "   \033[1;38;5;255m- Oh My Zsh configuration\033[0m"
+    echo -e "\033[1;38;5;51m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
+fi
+
 # Print important follow-up instructions if needed
 if [ "$GCM_NEEDS_INSTALL" = true ]; then
     echo -e "\n\033[1;38;5;51m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m"
