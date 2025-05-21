@@ -550,11 +550,11 @@ else
         # Install PyTorch with MPS support for Apple Silicon
         "$HOME/miniconda3/bin/conda" install -y -n pytorch pytorch torchvision torchaudio -c pytorch
 
-        # Install common ML packages
-        "$HOME/miniconda3/bin/conda" install -y -n pytorch pandas matplotlib scikit-learn jupyter ipykernel -c conda-forge
+        # Install common ML packages from conda-forge
+        "$HOME/miniconda3/bin/conda" install -y -n pytorch pandas matplotlib scikit-learn jupyter ipykernel onnx -c conda-forge
 
-        # Install transformers and datasets for HuggingFace support
-        "$HOME/miniconda3/bin/conda" run -n pytorch pip install transformers datasets
+        # Install additional ML packages from conda-forge
+        "$HOME/miniconda3/bin/conda" install -y -n pytorch transformers datasets -c conda-forge
     ) > /dev/null 2>&1 &
 
     install_pid=$!
