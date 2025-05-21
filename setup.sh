@@ -506,8 +506,8 @@ else
         "$HOME/miniconda3/bin/conda" init zsh
         "$HOME/miniconda3/bin/conda" init bash
 
-        # Configure conda to not activate base environment by default
-        "$HOME/miniconda3/bin/conda" config --set auto_activate_base false
+        # Configure conda to activate base environment by default
+        "$HOME/miniconda3/bin/conda" config --set auto_activate_base true
 
         # Clean up
         cd - > /dev/null
@@ -531,30 +531,35 @@ else
     fi
 fi
 
-# Create PyTorch ML environment
-CURRENT_SECTION="Creating PyTorch ML environment"
+# Install PyTorch and ML packages
+CURRENT_SECTION="Installing PyTorch and ML packages"
 section_start "$CURRENT_SECTION"
 
-# Check if the environment already exists
-if [ -d "$HOME/miniconda3/envs/pytorch" ]; then
+# Create a flag file to track whether PyTorch is installed
+pytorch_flag="$HOME/.pytorch_installed"
+
+if [ -f "$pytorch_flag" ]; then
     section_skip
 else
-    # Create environment and install packages
+    # Install packages into the base environment
     (
         # Add conda to path for this script session if needed
         export PATH="$HOME/miniconda3/bin:$PATH"
 
-        # Create PyTorch environment non-interactively
-        "$HOME/miniconda3/bin/conda" create -y -n pytorch python=3.10
+        # Install Python 3.10 first
+        "$HOME/miniconda3/bin/conda" install -y python=3.10
 
         # Install PyTorch with MPS support for Apple Silicon
-        "$HOME/miniconda3/bin/conda" install -y -n pytorch pytorch torchvision torchaudio -c pytorch
+        "$HOME/miniconda3/bin/conda" install -y pytorch torchvision torchaudio -c pytorch
 
         # Install common ML packages from conda-forge
-        "$HOME/miniconda3/bin/conda" install -y -n pytorch pandas matplotlib scikit-learn jupyter ipykernel onnx -c conda-forge
+        "$HOME/miniconda3/bin/conda" install -y pandas matplotlib scikit-learn jupyter ipykernel onnx -c conda-forge
 
         # Install additional ML packages from conda-forge
-        "$HOME/miniconda3/bin/conda" install -y -n pytorch transformers datasets -c conda-forge
+        "$HOME/miniconda3/bin/conda" install -y transformers datasets -c conda-forge
+
+        # Create flag file to indicate successful installation
+        touch "$pytorch_flag"
     ) > /dev/null 2>&1 &
 
     install_pid=$!
@@ -567,31 +572,30 @@ else
 
     # Check if installation was successful
     wait $install_pid
-    if [ -d "$HOME/miniconda3/envs/pytorch" ]; then
+    if [ -f "$pytorch_flag" ]; then
         echo -e " \033[1;38;5;118mDone ✓\033[0m"
     else
         echo -e " \033[1;38;5;196mFailed ✗\033[0m"
     fi
 fi
 
-# Add conda initialization and convenience alias to .zshrc
-CURRENT_SECTION="Adding conda initialization and shortcuts to .zshrc"
+# Add conda initialization to .zshrc
+CURRENT_SECTION="Adding conda initialization to .zshrc"
 section_start "$CURRENT_SECTION"
 
-if grep -q "miniconda3/bin" "$HOME/.zshrc" && grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+if grep -q "miniconda3/bin" "$HOME/.zshrc"; then
     section_skip
 else
-    # Add conda initialization and the alias to activate the PyTorch environment
+    # Add conda initialization
     (
         echo '' >> "$HOME/.zshrc"
-        echo '# Conda initialization and shortcuts' >> "$HOME/.zshrc"
+        echo '# Conda initialization' >> "$HOME/.zshrc"
         echo 'export PATH="$HOME/miniconda3/bin:$PATH"' >> "$HOME/.zshrc"
         echo 'source $HOME/miniconda3/etc/profile.d/conda.sh' >> "$HOME/.zshrc"
-        echo 'alias activate-pytorch="conda activate pytorch"' >> "$HOME/.zshrc"
     ) > /dev/null 2>&1
 
     # Check if successful
-    if grep -q "miniconda3/bin" "$HOME/.zshrc" && grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+    if grep -q "miniconda3/bin" "$HOME/.zshrc"; then
         section_done
     else
         echo -e " \033[1;38;5;196mFailed ✗\033[0m"
