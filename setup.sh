@@ -479,6 +479,311 @@ else
     fi
 fi
 
+# Install Miniconda and set up Python ML environment
+CURRENT_SECTION="Installing Miniconda"
+section_start "$CURRENT_SECTION"
+
+# Check if Miniconda is already installed
+if [ -d "$HOME/miniconda3" ]; then
+    section_skip
+else
+    # Download Miniconda installer for Apple Silicon
+    (
+        # Create a temporary directory
+        tmp_dir=$(mktemp -d)
+        cd "$tmp_dir"
+
+        # Download the installer
+        curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -o miniconda.sh
+
+        # Install Miniconda non-interactively
+        bash miniconda.sh -b -p "$HOME/miniconda3"
+
+        # Add conda to path for this script session
+        export PATH="$HOME/miniconda3/bin:$PATH"
+
+        # Initialize conda for shell (without user confirmation)
+        "$HOME/miniconda3/bin/conda" init zsh
+        "$HOME/miniconda3/bin/conda" init bash
+
+        # Configure conda to not activate base environment by default
+        "$HOME/miniconda3/bin/conda" config --set auto_activate_base false
+
+        # Clean up
+        cd - > /dev/null
+        rm -rf "$tmp_dir"
+    ) > /dev/null 2>&1 &
+
+    install_pid=$!
+
+    # Show animated progress while installing
+    while kill -0 $install_pid 2>/dev/null; do
+        echo -ne "\033[1;38;5;75m.\033[0m"
+        sleep 1
+    done
+
+    # Check if installation was successful
+    wait $install_pid
+    if [ -d "$HOME/miniconda3" ]; then
+        echo -e " \033[1;38;5;118mDone ✓\033[0m"
+    else
+        echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+    fi
+fi
+
+# Create PyTorch ML environment
+CURRENT_SECTION="Creating PyTorch ML environment"
+section_start "$CURRENT_SECTION"
+
+# Check if the environment already exists
+if [ -d "$HOME/miniconda3/envs/pytorch" ]; then
+    section_skip
+else
+    # Create environment and install packages
+    (
+        # Add conda to path for this script session if needed
+        export PATH="$HOME/miniconda3/bin:$PATH"
+
+        # Create PyTorch environment non-interactively
+        "$HOME/miniconda3/bin/conda" create -y -n pytorch python=3.10
+
+        # Install PyTorch with MPS support for Apple Silicon
+        "$HOME/miniconda3/bin/conda" install -y -n pytorch pytorch torchvision torchaudio -c pytorch
+
+        # Install common ML packages
+        "$HOME/miniconda3/bin/conda" install -y -n pytorch pandas matplotlib scikit-learn jupyter ipykernel -c conda-forge
+
+        # Install transformers and datasets for HuggingFace support
+        "$HOME/miniconda3/bin/conda" run -n pytorch pip install transformers datasets
+    ) > /dev/null 2>&1 &
+
+    install_pid=$!
+
+    # Show animated progress while installing
+    while kill -0 $install_pid 2>/dev/null; do
+        echo -ne "\033[1;38;5;75m.\033[0m"
+        sleep 1
+    done
+
+    # Check if installation was successful
+    wait $install_pid
+    if [ -d "$HOME/miniconda3/envs/pytorch" ]; then
+        echo -e " \033[1;38;5;118mDone ✓\033[0m"
+    else
+        echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+    fi
+fi
+
+# Add conda initialization and convenience alias to .zshrc
+CURRENT_SECTION="Adding conda shortcuts to .zshrc"
+section_start "$CURRENT_SECTION"
+
+if grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+    section_skip
+else
+    # Add the alias to activate the PyTorch environment
+    (
+        echo '' >> "$HOME/.zshrc"
+        echo '# Conda environment shortcuts' >> "$HOME/.zshrc"
+        echo 'alias activate-pytorch="conda activate pytorch"' >> "$HOME/.zshrc"
+    ) > /dev/null 2>&1
+
+    # Check if successful
+    if grep -q "alias activate-pytorch" "$HOME/.zshrc"; then
+        section_done
+    else
+        echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+    fi
+fi
+
+# Create a convenience script for ML project setup
+CURRENT_SECTION="Creating ML project setup script"
+section_start "$CURRENT_SECTION"
+
+if [ -f "$HOME/bin/ml-project" ]; then
+    section_skip
+else
+    cat <<"EOS" | sed 's/^    //' > ~/bin/ml-project
+    #!/usr/bin/env bash
+
+    # ML Project Setup Script
+    # Usage: ml-project <project_name>
+
+    if [ -z "$1" ]; then
+        echo "Usage: ml-project <project_name>"
+        exit 1
+    fi
+
+    PROJECT_NAME="$1"
+
+    # Create project directory
+    mkdir -p "$PROJECT_NAME"
+    cd "$PROJECT_NAME"
+
+    # Create standard project structure
+    mkdir -p data/{raw,processed}
+    mkdir -p notebooks
+    mkdir -p src/{models,utils,data}
+
+    # Create initial files
+    touch README.md
+    touch requirements.txt
+
+    # Create .gitignore
+    cat > .gitignore << 'GITIGNORE'
+    # Python
+    __pycache__/
+    *.py[cod]
+    *$py.class
+    *.so
+    .Python
+    env/
+    build/
+    develop-eggs/
+    dist/
+    downloads/
+    eggs/
+    .eggs/
+    lib/
+    lib64/
+    parts/
+    sdist/
+    var/
+    *.egg-info/
+    .installed.cfg
+    *.egg
+
+    # Jupyter Notebooks
+    .ipynb_checkpoints
+
+    # Model files
+    *.h5
+    *.pkl
+    *.pt
+    *.pth
+
+    # Data files (consider your specific needs)
+    data/raw/*
+    data/processed/*
+    !data/raw/.gitkeep
+    !data/processed/.gitkeep
+
+    # Environment
+    .env
+    .venv
+    venv/
+    ENV/
+    GITIGNORE
+
+    # Create placeholder files to keep directories
+    touch data/raw/.gitkeep
+    touch data/processed/.gitkeep
+
+    # Initialize Jupyter notebook with PyTorch imports
+    cat > notebooks/01_exploration.ipynb << 'NOTEBOOK'
+    {
+     "cells": [
+      {
+       "cell_type": "markdown",
+       "metadata": {},
+       "source": [
+        "# Data Exploration and Analysis\n",
+        "\n",
+        "This notebook contains initial exploration of the dataset."
+       ]
+      },
+      {
+       "cell_type": "code",
+       "execution_count": null,
+       "metadata": {},
+       "source": [
+        "import torch\n",
+        "import numpy as np\n",
+        "import pandas as pd\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "# Check PyTorch and access to MPS (Metal Performance Shaders)\n",
+        "print(f\"PyTorch version: {torch.__version__}\")\n",
+        "print(f\"MPS available: {torch.backends.mps.is_available()}\")\n",
+        "\n",
+        "# Set the compute device\n",
+        "device = torch.device(\"mps\" if torch.backends.mps.is_available() else \"cpu\")\n",
+        "print(f\"Using device: {device}\")"
+       ],
+       "outputs": []
+      }
+     ],
+     "metadata": {
+      "kernelspec": {
+       "display_name": "Python [conda env:pytorch]",
+       "language": "python",
+       "name": "conda-env-pytorch-py"
+      },
+      "language_info": {
+       "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+       },
+       "file_extension": ".py",
+       "mimetype": "text/x-python",
+       "name": "python",
+       "nbconvert_exporter": "python",
+       "pygments_lexer": "ipython3",
+       "version": "3.10.0"
+      }
+     },
+     "nbformat": 4,
+     "nbformat_minor": 4
+    }
+    NOTEBOOK
+
+    # Initialize main script file
+    cat > src/main.py << 'MAINPY'
+    import torch
+    import argparse
+
+    def main():
+        parser = argparse.ArgumentParser(description='ML model training script')
+        parser.add_argument('--data', type=str, required=True, help='Path to data file')
+        parser.add_argument('--epochs', type=int, default=10, help='Number of epochs')
+        parser.add_argument('--batch-size', type=int, default=32, help='Batch size')
+        args = parser.parse_args()
+
+        # Set device
+        device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        print(f"Using device: {device}")
+
+        # Your code here
+        print(f"Starting training with {args.epochs} epochs and batch size {args.batch_size}")
+
+    if __name__ == "__main__":
+        main()
+    MAINPY
+
+    # Activate the PyTorch environment
+    # shellcheck disable=SC1090
+    source "$HOME/miniconda3/etc/profile.d/conda.sh"
+    conda activate pytorch
+
+    # Install ipykernel for this project
+    python -m ipykernel install --user --name pytorch --display-name "Python [conda env:pytorch]"
+
+    echo "ML project '$PROJECT_NAME' created successfully!"
+    echo "To start working:"
+    echo "  cd $PROJECT_NAME"
+    echo "  conda activate pytorch"
+    echo "  jupyter notebook notebooks/01_exploration.ipynb"
+EOS
+
+    chmod +x ~/bin/ml-project
+
+    if [ -x "$HOME/bin/ml-project" ]; then
+        section_done
+    else
+        echo -e " \033[1;38;5;196mFailed ✗\033[0m"
+    fi
+fi
+
 # Install Visual Studio Code and set up the CLI command
 CURRENT_SECTION="Installing Visual Studio Code"
 section_start "$CURRENT_SECTION"
