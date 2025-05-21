@@ -5,7 +5,7 @@ A streamlined setup script for bootstrapping macOS development environments with
 ## Features
 
 - 🔧 **Core Tools**: Git, Homebrew, Command Line Tools, and essential utilities
-- 💻 **Development Environment**: Node.js, Java, Scala, Go, and more
+- 💻 **Development Environment**: Node.js, Java, Scala, Go, Python and more
 - 📝 **Code Editors**: Visual Studio Code and Zed with CLI integration
 - 🐚 **Shell Configuration**: Oh My Zsh with a custom theme
 - 🐳 **Container Support**: Docker and Docker Compose
@@ -15,12 +15,6 @@ A streamlined setup script for bootstrapping macOS development environments with
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/retronome/bootstrap/main/setup.sh | bash
-```
-
-For testing or review without installation:
-
-```bash
-TESTING=true curl -fsSL https://raw.githubusercontent.com/retronome/bootstrap/main/setup.sh | bash
 ```
 
 ## What's Included
@@ -38,6 +32,7 @@ TESTING=true curl -fsSL https://raw.githubusercontent.com/retronome/bootstrap/ma
 - Go
 - Deno
 - Gleam
+- Python
 
 ### Applications
 - Visual Studio Code
@@ -47,20 +42,12 @@ TESTING=true curl -fsSL https://raw.githubusercontent.com/retronome/bootstrap/ma
 ### Build Tools
 - Mill 0.12.5
 - Make
-- SDKMAN
 
 ### Configuration
 - Custom zsh theme
 - Git configuration
 - Docker environment
 - Environment path settings
-
-## Options
-
-Run with environment variables to customize the installation:
-
-- `FORCE=true`: Reinstall existing components
-- `TESTING=true`: Dry-run without actually installing
 
 ## Manual Installation
 
